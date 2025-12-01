@@ -286,6 +286,22 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     }, [showAuthDialog, isAuthenticated, pendingMessage, sendMessage]);
 
+    // Prevent body scrolling when workbench is active
+    useEffect(() => {
+      if (typeof document !== 'undefined') {
+        if (chatStarted && showWorkbench) {
+          document.body.classList.add('workbench-active');
+        } else {
+          document.body.classList.remove('workbench-active');
+        }
+      }
+      return () => {
+        if (typeof document !== 'undefined') {
+          document.body.classList.remove('workbench-active');
+        }
+      };
+    }, [chatStarted, showWorkbench]);
+
     // Get fixed textarea height based on screen size and chat state
     const getTextareaHeight = () => {
       if (typeof window === 'undefined') {
@@ -455,7 +471,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             styles.BaseChat,
             'relative flex w-full bg-bolt-elements-background-depth-1',
             // On homepage (when chat hasn't started), allow natural height flow
-            !chatStarted ? 'h-auto min-h-0' : '',
+            !chatStarted ? 'h-auto min-h-0' : 'h-screen overflow-hidden',
             // On mobile when chat hasn't started, don't constrain height
             isMobile && !chatStarted ? 'h-auto' : '',
             // Stack vertically on mobile when workbench is shown
@@ -463,6 +479,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           )}
           data-chat-visible={showChat}
           data-chat-started={chatStarted ? 'true' : 'false'}
+          style={chatStarted ? {
+            height: 'calc(100vh - var(--header-height))',
+            maxHeight: 'calc(100vh - var(--header-height))',
+            overflow: 'hidden'
+          } : undefined}
         >
           {/* Menu - Only show when authenticated */}
           {isAuthenticated && (
@@ -472,18 +493,25 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           {/* Chat Container */}
           <div
             className={classNames(
-              "flex flex-col transition-all duration-300 flex-shrink-0 chat-container w-full",
+              "flex flex-col transition-all duration-300 flex-shrink-0 chat-container",
               // On mobile when chat hasn't started, ensure natural height
-              isMobile && !chatStarted ? 'h-auto' : ''
+              isMobile && !chatStarted ? 'h-auto' : '',
+              // When chat started, fixed height
+              chatStarted ? 'h-screen' : 'w-full'
             )}
-            style={!isMobile ? {
+            style={!isMobile && chatStarted ? {
               marginLeft: !isAuthenticated ? '0' : (isMenuOpen ? '225px' : '64px'),
-              width: chatStarted && showWorkbench
+              width: showWorkbench
                 ? 'min(480px, 40vw)'
-                : (!isAuthenticated 
+                : (!isAuthenticated
                   ? '100vw'
                   : `calc(100vw - ${isMenuOpen ? '225px' : '64px'})`
-                )
+                ),
+              height: 'calc(100vh - var(--header-height))',
+              maxHeight: 'calc(100vh - var(--header-height))'
+            } : !chatStarted ? {
+              marginLeft: !isAuthenticated ? '0' : (isMenuOpen ? '225px' : '64px'),
+              width: !isAuthenticated ? '100vw' : `calc(100vw - ${isMenuOpen ? '225px' : '64px'})`
             } : undefined}
           >
             <div
@@ -494,7 +522,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               )}
               style={chatStarted ? {
                 overflowAnchor: 'none',
-                scrollBehavior: 'smooth'
+                scrollBehavior: 'smooth',
+                maxHeight: '100%'
               } : undefined}
               data-chat-scroll-container
             >

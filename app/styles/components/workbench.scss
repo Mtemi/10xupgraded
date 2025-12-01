@@ -235,6 +235,40 @@
   }
 }
 
+// Workbench container - Fixed height, no stretching
+.workbench-container {
+  position: fixed;
+  right: 0;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    position: relative;
+    width: 100vw !important;
+    height: 50vh !important;
+  }
+}
+
+// Chat container - Fixed height with internal scroll only
+.chat-container {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &[data-chat-started="true"] {
+    height: calc(100vh - var(--header-height));
+    max-height: calc(100vh - var(--header-height));
+  }
+}
+
+// Workbench inner - Ensure no overflow
+.workbench-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 // Loading Animation
 @keyframes breathe {
   0%, 100% {

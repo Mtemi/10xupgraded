@@ -28,6 +28,12 @@ body {
   background-color: #000; /* Ensure dark background */
   font-family: Inter, "SF Pro Text", -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", system-ui, ui-sans-serif, sans-serif;
   line-height: 1.6;
+
+  // Prevent page scrolling when workbench is active
+  &.workbench-active {
+    overflow: hidden;
+    height: 100vh;
+  }
 }
 
 /* Headings - Bitget-like hierarchy */

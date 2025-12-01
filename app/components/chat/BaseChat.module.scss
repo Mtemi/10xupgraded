@@ -1,11 +1,20 @@
 .BaseChat {
   position: relative;
   background: linear-gradient(180deg, #000000 0%, #0a0e17 100%);
-  
+
   // On homepage (when chat hasn't started), ensure natural flow for footer
   &:not([data-chat-started="true"]) {
     min-height: auto !important;
     height: auto !important;
+  }
+
+  // When chat is started, fixed height with no overflow
+  &[data-chat-started="true"] {
+    height: calc(100vh - var(--header-height));
+    max-height: calc(100vh - var(--header-height));
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
   }
 
   &[data-chat-visible='true'] {
