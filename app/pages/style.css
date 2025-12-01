@@ -1,0 +1,69 @@
+html {
+    scroll-behavior: smooth;
+}
+
+h4{
+    font-size: 25px;
+    font-weight: 500;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+h5{
+    font-size: 20px;
+    font-weight: 500;
+    margin-top: 25px;
+    margin-bottom: 5px;
+}
+
+h6{
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+p{
+    font-size: 15px;
+    color: rgb(128, 128, 128);
+    margin: 15px 0px;
+}
+
+li{
+    font-size: 15px;
+    color: rgb(131, 131, 131);
+    margin: 5px 0px;
+}
+
+a{
+    cursor: pointer;
+    color: skyblue;
+}
+
+table{
+    color: rgb(122, 122, 122);
+}
+
+table, th, td {
+    border: 1px solid rgb(128, 128, 128);
+    padding: 15px;
+}
+
+/* @media (prefers-color-scheme: dark) {
+    h4,
+    h5,
+    h6{
+        color: white;
+    }
+    p,
+    li {
+        color: rgba(255, 255, 255, 0.737);
+    }
+    table{
+        color: white;
+    }
+    
+    table, th, td {
+        border: 1px solid rgb(255, 255, 255);
+    }
+} */

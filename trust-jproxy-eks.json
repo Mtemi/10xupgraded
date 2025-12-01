@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "USClusterIRSA",
+      "Effect": "Allow",
+      "Principal": { "Federated": "" },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          ":aud": "sts.amazonaws.com",
+          ":sub": "system:serviceaccount:jupyter-proxy:jupyter-proxy"
+        }
+      }
+    }
+  ]
+}

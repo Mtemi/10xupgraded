@@ -1,0 +1,45 @@
+SELECT 
+  s.id,
+  s.user_id,
+  sp.name as plan_name,
+  s.status,
+  s.token_balance,
+  s.current_period_start,
+  s.current_period_end,
+  s.created_at,
+  s.updated_at
+FROM subscriptions s
+JOIN subscription_plans sp ON s.plan_id = sp.id
+WHERE s.user_id = 'f70dc27b-e9d4-4acc-8e2c-2be9f8907362'
+ORDER BY s.updated_at DESC;
+
+
+UPDATE subscriptions 
+SET 
+  status = 'active',
+  current_period_start = now(),
+  current_period_end = now() + interval '1 year',
+  updated_at = now()
+WHERE user_id = 'f70dc27b-e9d4-4acc-8e2c-2be9f8907362' 
+  AND plan_id = '03f12319-b254-4523-bab1-ed17d6abdcd1';
+
+
+UPDATE subscriptions 
+SET 
+  status = 'cancelled',
+  updated_at = now()
+WHERE user_id = 'f70dc27b-e9d4-4acc-8e2c-2be9f8907362' 
+  AND plan_id != '03f12319-b254-4523-bab1-ed17d6abdcd1';
+
+SELECT 
+  s.id,
+  sp.name as plan_name,
+  s.status,
+  s.token_balance,
+  s.current_period_end
+FROM subscriptions s
+JOIN subscription_plans sp ON s.plan_id = sp.id
+WHERE s.user_id = 'f70dc27b-e9d4-4acc-8e2c-2be9f8907362'
+ORDER BY s.status DESC, s.updated_at DESC;
+
+SELECT get_remaining_tokens('f70dc27b-e9d4-4acc-8e2c-2be9f8907362'::uuid);

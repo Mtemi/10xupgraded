@@ -1,0 +1,114 @@
+/* Chat component styles */
+.chat-container {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.chat-streaming {
+  .chat-input {
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+  }
+  
+  .chat-messages {
+    .message:last-child {
+      opacity: 0.95;
+      transition: opacity 0.2s ease-in-out;
+    }
+  }
+}
+
+/* Prevent text blur during streaming */
+.chat-message {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ensure proper text rendering during transitions */
+.message-content {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Fix for blurry text during processing */
+.processing-message {
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Mobile-specific chat optimizations */
+@media (max-width: 640px) {
+  /* Fix textarea height and placeholder display issues */
+  .mobile-textarea-optimized {
+    line-height: 1.3 !important;
+    padding: 0.75rem !important;
+    
+    /* Ensure placeholder text fits properly */
+    &::placeholder {
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Prevent scrolling when placeholder is shown */
+    &:placeholder-shown {
+      overflow: hidden;
+    }
+    
+    /* Allow scrolling only when there's actual content */
+    &:not(:placeholder-shown) {
+      overflow-y: auto;
+    }
+  }
+  
+  .chat-container {
+    padding: 0.75rem;
+  }
+  
+  /* Ensure textarea doesn't resize on mobile */
+  textarea {
+    resize: none !important;
+    overflow-y: auto;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Prevent zoom on iOS */
+    font-size: 16px !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Improve touch targets on mobile */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Optimize example prompts for mobile */
+  .example-prompts {
+    button {
+      min-height: 40px;
+      padding: 0.5rem;
+      text-align: center;
+      line-height: 1.3;
+    }
+  }
+}
+
+/* Prevent layout shift during loading */
+.textarea-container {
+  contain: layout style;
+}
+
+/* Ensure consistent textarea behavior */
+textarea {
+  field-sizing: content;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  
+  /* Prevent elastic scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}

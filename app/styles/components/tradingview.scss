@@ -1,0 +1,52 @@
+// app/styles/components/tradingview.scss
+#tradingview_chart {
+  height: 100%;
+  width: 100%;
+  background-color: var(--bolt-elements-background-depth-1);
+  position: relative;
+  overflow: hidden;
+  
+  .chart-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+}
+
+.chart-controls {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--bolt-elements-background-depth-2);
+  border-bottom: 1px solid var(--bolt-elements-borderColor);
+  z-index: 10;
+
+  select {
+    background-color: var(--bolt-elements-background-depth-1);
+    color: var(--bolt-elements-textPrimary);
+    border: 1px solid var(--bolt-elements-borderColor);
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    min-width: 120px;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--bolt-elements-borderColorActive);
+    }
+
+    &:hover {
+      background-color: var(--bolt-elements-item-backgroundActive);
+    }
+  }
+}
+
+.chart-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--bolt-elements-textSecondary);
+  text-align: center;
+}

@@ -1,0 +1,12 @@
+controller:
+  hostNetwork: false
+  hostPorts: {}
+  service:
+    type: NodePort
+    nodePorts:
+      http: 30080
+      https: 30443
+  # remove any hostNetwork/hostPorts blocks entirely if you don't need them
+
+defaultBackend:
+  enabled: false

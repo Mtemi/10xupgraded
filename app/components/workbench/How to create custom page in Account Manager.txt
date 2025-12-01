@@ -1,0 +1,164 @@
+How to create custom page in Account Manager
+The Account Manager (AM) is an interactive widget that displays trading information, such as orders, positions, and account balance. This guide describes how to create a custom page in the AM, populate it with data, and provide dynamic updates.
+
+Before you start
+This guide assumes that you are familiar with the core trading concepts and have implemented the required methods of the Broker API.
+
+The example below extends the TradingView's Broker API implementation and overrides the default AM implementation. We recommend reviewing the implementation as a prerequisite to following this guide.
+
+Since the AM is supported only on larger viewports, it will not be displayed within the iframe below. We recommend clicking the Edit on CodePen button to view the full example, where the AM is visible.
+
+
+1. Set up a delegate in constructor
+Delegates are functions that subscribe to specific events and get triggered when these events occur. In this example, delegates allow custom pages to automatically refresh when there are data changes, ensuring that the AM displays real-time information.
+
+Define a delegate in the constructor of the CustomBroker class using the createDelegate method of the Trading Host.
+
+constructor(host, quotesProvider) {
+    super(host, quotesProvider);
+
+    // Create a delegate
+    this._customPageChangeDelegate = host.factory.createDelegate();
+}
+
+2. Initialize the first item
+In this example, the custom page will have three columns: symbol name and two dynamic text fields. Initialize the first item to be displayed on the page.
+
+constructor(host, quotesProvider) {
+
+    this._customPageData = [
+        {
+          id: "1", // Item's unique ID
+          symbol: "AAPL", // First column
+          customTextOne: `1 - Example`, // Second column
+          customTextTwo: Math.round(Math.random() * +100), // Third column
+        },
+      ];
+}
+
+3. Create a function for data updates
+The triggerCustomPageUpdate method updates the custom page by adding a new data item every 5 seconds. This function triggers the delegate to notify the UI, allowing users to see changes immediately.
+
+triggerCustomPageUpdate() {
+    // Generate a new item with a unique ID
+    const newId = this._customPageData.length + 1;
+    const newItem = {
+        id: newId,
+        symbol: "IBM",
+        customTextOne: `${newId} - Example`,
+        customTextTwo: Math.round(Math.random() * +100),
+    };
+
+    // Add new data to custom page
+    this._customPageData.push(newItem);
+    // Notify any listeners that the data has changed
+    this._customPageChangeDelegate.fire(newItem);
+}
+
+Then, simulate custom page updates in the constructor of the CustomBroker class.
+
+constructor(host, quotesProvider) {
+    // ...
+
+    setInterval(() => {
+        this.triggerCustomPageUpdate();
+    }, 5000);
+}
+
+4. Define custom page
+The accountManagerInfo method returns an AccountManagerInfo object containing the information that will be displayed in the AM. Since this example overrides the default implementation defined in the Broker API implementation, we will only add a new page to the existing AM configuration. Define the custom page via the pages property of AccountManagerInfo.
+
+pages: [
+    {
+        id: "custom-page",
+        title: "Custom Page",
+        tables: [
+            // Custom table definition
+        ],
+    },
+];
+
+Define a custom table within the tables property. This table will be displayed on the custom page.
+
+tables: [
+    {
+        // Listen for data updates
+        // When data changes, changeDelegate will signal the UI to update the table
+        changeDelegate: this._customPageChangeDelegate,
+        columns: [
+            // Columns definition
+        ],
+            id: "custom-table",
+            title: "Custom Table",
+            // Request table data
+            getData: () => {
+                console.log("getData");
+                return Promise.resolve(this._customPageData);
+            },
+    },
+],
+
+
+Define columns within the table. The order of column display aligns with the sequence of objects added to the columns array. The formatter property manages how the values are displayed in the columns. Refer to Value formatters for more information.
+
+columns: [
+    // Display symbol name in the first column
+    {
+        id: "symbol",
+        label: "Symbol",
+        formatter: "rowButton", // Custom formatter
+        dataFields: ["symbol"],
+    },
+    // Display custom data in the second column
+    {
+        id: "customTextColumnOne",
+        label: "Column One",
+        formatter: "text",  // StandardFormatterName.Text
+        dataFields: ["customTextOne"],
+    },
+    // Display custom data in the third column
+    {
+        id: "customTextColumnTwo",
+        label: "Column Two",
+        formatter: "text",
+        dataFields: ["customTextTwo"],
+    },
+],
+
+5. Implement chart loading on click
+To allow users to load a selected symbol onto the chart by clicking its name, you need to make the symbol name clickable. This can be achieved by creating a custom formatter using the customFormatters property.
+
+The rowButton formatter transforms the symbol name into a button that, when clicked, updates the chart with the selected symbol.
+
+customFormatters: [
+    {
+        name: "rowButton",
+        formatText: () => "",
+        formatElement: ({ values }) => {
+            const [symbol, id] = values;
+            const row = document.createElement("button");
+            row.innerText = symbol;
+            row.style.borderRadius = "6px";
+            row.style.padding = "2px 8px";
+            row.style.border = "none";
+
+            row.addEventListener("mouseenter", () => {
+                row.style.backgroundColor = "#2962ff";
+                row.style.color = "#fff";
+            });
+            row.addEventListener("mouseleave", () => {
+                row.style.backgroundColor = "#f0f0f0";
+                row.style.color = "#000";
+            });
+
+            row.addEventListener("click", (event) => {
+                event.stopPropagation();
+
+                window.tvWidget.activeChart().setSymbol(symbol);
+            });
+            return row;
+        },
+    },
+],
+
+At this point, the AM includes a custom page with a dynamic table. The table displays three columns: one showing symbols and two displaying custom data that update in real time.

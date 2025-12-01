@@ -1,0 +1,356 @@
+# Server block for 10xtraders.ai
+server {
+    server_name 10xtraders.ai;
+
+    # Common security headers for all locations
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Resource-Policy "cross-origin" always;
+    add_header Cross-Origin-Isolation "?1" always;
+
+    add_header Cross-Origin-Embedder-Policy "credentialless";
+    add_header Cross-Origin-Opener-Policy "same-origin";
+    add_header Cross-Origin-Resource-Policy "cross-origin";
+
+    location / {
+        proxy_pass http://localhost:8788;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+
+        # CORS headers
+        add_header Access-Control-Allow-Origin "$http_origin" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE, HEAD" always;
+        add_header Access-Control-Allow-Headers "DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Authorization, x-session-id" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Max-Age "1728000" always;
+        
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "$http_origin" always;
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE, HEAD" always;
+            add_header Access-Control-Allow-Headers "DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Authorization, x-session-id" always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            add_header Access-Control-Max-Age "1728000" always;
+            add_header Content-Type 'text/plain charset=UTF-8';
+            add_header Content-Length 0;
+            return 204;
+        }
+    }
+
+    # Flask Backend API
+    location /apa/ {
+        proxy_pass http://127.0.0.1:5002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Inherit common security headers
+        add_header Access-Control-Allow-Origin "$http_origin" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE, HEAD" always;
+        add_header Access-Control-Allow-Headers "DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Authorization, x-session-id" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+    }
+
+    # WebSocket Handling
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Inherit common security headers
+        add_header Access-Control-Allow-Origin "$http_origin" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Authorization, x-session-id" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+    }
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/10xtraders.ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/10xtraders.ai/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+
+# Redirect HTTP to HTTPS for 10xtraders.ai
+server {
+    listen 80;
+    server_name 10xtraders.ai;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    server_name debugger.10xtraders.ai;
+
+    location / {
+        proxy_pass http://127.0.0.1:8788; # Proxy to your app running locally on port 8788
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+
+        # CORS Headers
+        add_header Access-Control-Allow-Origin * always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, x-session-id" always;
+
+        # Preflight OPTIONS requests
+        if ($request_method = OPTIONS) {
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+    # Flask Backend API
+    location /apa/ {
+        proxy_pass http://127.0.0.1:5002; # Proxy to your Flask API
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # CORS Headers for API
+        add_header Access-Control-Allow-Origin "https://debugger.10xtraders.ai" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-Session-Id" always;
+
+        # Handle preflight OPTIONS requests
+        if ($request_method = OPTIONS) {
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+
+    # WebSocket Handling
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5002; # Flask WebSocket server
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket-specific CORS Headers
+        add_header Access-Control-Allow-Origin "https://debugger.10xtraders.ai" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+    }
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/debugger.10xtraders.ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/debugger.10xtraders.ai/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+    listen 80;
+    server_name debugger.10xtraders.ai;
+    return 301 https://$host$request_uri;
+}
+
+
+# Compiler Server Block
+server {
+    server_name compiler.10xtraders.ai;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+
+        # CORS Headers
+        set $cors_allowed_origin "*";
+        if ($http_origin ~* (https://app\.10xtraders\.ai|https://compiler\.10xtraders\.ai)) {
+            set $cors_allowed_origin $http_origin;
+        }
+
+        add_header Access-Control-Allow-Origin $cors_allowed_origin always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, x-session-id" always;
+
+        # Preflight OPTIONS requests
+        if ($request_method = OPTIONS) {
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/compiler.10xtraders.ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/compiler.10xtraders.ai/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+# Redirect HTTP to HTTPS for compiler.10xtraders.ai
+server {
+    listen 80;
+    server_name compiler.10xtraders.ai;
+    return 301 https://$host$request_uri;
+}
+
+
+server {
+    server_name app.10xtraders.ai;
+
+    # Proxy requests to `/wp-json/` to WordPress OAuth server
+    location /wp-json/ {
+        proxy_pass https://3.132.101.217/wp-json/; # Forward to the WordPress OAuth server
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # CORS Headers for `/wp-json/`
+        add_header Access-Control-Allow-Origin "https://app.10xtraders.ai" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-Session-Id" always;
+
+        # Handle OPTIONS preflight requests
+        if ($request_method = OPTIONS) {
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+    # React Frontend
+    location / {
+        proxy_pass http://127.0.0.1:5173; # Your React frontend
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+
+        # CORS Headers
+        set $cors_allowed_origin "*";
+        if ($http_origin ~* (https://app\.10xtraders\.ai|https://compiler\.10xtraders\.ai)) {
+            set $cors_allowed_origin $http_origin;
+        }
+
+        add_header Access-Control-Allow-Origin $cors_allowed_origin always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, x-session-id" always;
+
+        # Preflight OPTIONS requests
+        if ($request_method = OPTIONS) {
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+    # Flask Backend API
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000; # Proxy to your Flask API
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # CORS Headers for API
+        add_header Access-Control-Allow-Origin "https://app.10xtraders.ai" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-Session-Id" always;
+
+        # Handle preflight OPTIONS requests
+        if ($request_method = OPTIONS) {
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+
+    # WebSocket Handling
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5000; # Flask WebSocket server
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket-specific CORS Headers
+        add_header Access-Control-Allow-Origin "https://app.10xtraders.ai" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+    }
+
+    # SSL Configuration
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/app.10xtraders.ai/fullchain.pem; # Adjust as per your certificate location
+    ssl_certificate_key /etc/letsencrypt/live/app.10xtraders.ai/privkey.pem; # Adjust as per your certificate location
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+# Redirect HTTP to HTTPS for app.10xtraders.ai
+server {
+    listen 80;
+    listen [::]:80;
+    server_name app.10xtraders.ai;
+
+    # Redirect all HTTP requests to HTTPS
+    return 301 https://$host$request_uri;
+}
+server {
+    if ($host = 10xtraders.ai) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    server_name 10xtraders.ai;
+    listen 80;
+    return 404; # managed by Certbot
+
+
+}

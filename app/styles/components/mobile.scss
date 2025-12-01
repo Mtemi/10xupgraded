@@ -1,0 +1,988 @@
+// Mobile Responsive Styles for All Components
+// This file contains comprehensive mobile responsive styles for the entire application
+
+// ========================================
+// BREAKPOINTS
+// ========================================
+$mobile-max: 640px;
+$tablet-min: 641px;
+$tablet-max: 1024px;
+$desktop-min: 1025px;
+
+// ========================================
+// SIDEBAR MENU RESPONSIVE
+// ========================================
+@media (max-width: $mobile-max) {
+  .side-menu {
+    // On mobile, make the menu narrower when collapsed
+    &[data-open='false'] {
+      width: 48px !important;
+    }
+
+    &[data-open='true'] {
+      width: 200px !important;
+      max-width: 80vw !important;
+    }
+
+    // Adjust padding and font sizes
+    .menu-item {
+      padding: 0.5rem !important;
+      font-size: 0.875rem !important;
+
+      .icon {
+        font-size: 1.125rem !important;
+      }
+    }
+
+    // Chat history items
+    .history-item {
+      padding: 0.625rem 0.5rem !important;
+      font-size: 0.8125rem !important;
+    }
+
+    // User profile section
+    .user-profile {
+      padding: 0.5rem !important;
+
+      img {
+        width: 2rem !important;
+        height: 2rem !important;
+      }
+
+      .user-name {
+        font-size: 0.8125rem !important;
+      }
+
+      .subscription-info {
+        font-size: 0.6875rem !important;
+      }
+    }
+  }
+}
+
+// ========================================
+// HEADER RESPONSIVE
+// ========================================
+@media (max-width: $mobile-max) {
+  header {
+    padding: 0.75rem 0.5rem !important;
+    height: 56px !important;
+
+    --header-height: 56px;
+
+    // Logo section
+    .logo-section {
+      img {
+        width: 120px !important;
+        max-width: 120px !important;
+      }
+    }
+
+    // Chat description - hide on mobile
+    .chat-description {
+      display: none !important;
+    }
+
+    // Action buttons - ensure proper positioning
+    .header-actions {
+      gap: 0.5rem !important;
+      flex-shrink: 0 !important;
+      margin-left: auto !important;
+
+      button {
+        padding: 0.375rem !important;
+        font-size: 0.875rem !important;
+
+        // Hide button text on mobile, keep icons only
+        span:not([class*='i-']) {
+          display: none !important;
+        }
+      }
+    }
+
+    // Theme switch - ensure it's positioned correctly
+    .theme-switch {
+      scale: 0.9 !important;
+      flex-shrink: 0 !important;
+      margin-left: auto !important;
+    }
+
+    // Ensure header items don't overlap
+    > div {
+      min-width: 0 !important;
+      flex-shrink: 1 !important;
+    }
+  }
+}
+
+@media (min-width: $tablet-min) and (max-width: $tablet-max) {
+  header {
+    padding: 1rem !important;
+
+    .logo-section img {
+      width: 140px !important;
+    }
+  }
+}
+
+// ========================================
+// FOOTER RESPONSIVE
+// ========================================
+@media (max-width: $mobile-max) {
+  // Ensure footer is always visible on mobile
+  footer {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 48px !important;
+    width: 100% !important;
+    position: relative !important;
+    z-index: 100 !important;
+    
+    > div {
+      padding: 0.5rem 0.75rem !important;
+      gap: 0.5rem !important;
+      flex-wrap: wrap !important;
+      overflow: visible !important;
+      width: 100% !important;
+    }
+
+    a {
+      font-size: 10px !important;
+      line-height: 1.4 !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+
+    // Copyright text
+    > div > div:last-child {
+      font-size: 10px !important;
+      flex-shrink: 0 !important;
+      width: 100% !important;
+      text-align: center !important;
+      margin-top: 0.25rem !important;
+    }
+  }
+
+  // Ensure main content allows footer to be visible
+  main {
+    overflow: visible !important;
+  }
+}
+
+@media (min-width: $tablet-min) and (max-width: $tablet-max) {
+  footer {
+    height: 44px !important;
+    padding: 0.625rem 1rem !important;
+
+    .footer-content {
+      font-size: 0.8125rem !important;
+    }
+  }
+}
+
+// ========================================
+// BASE CHAT / HOMEPAGE RESPONSIVE
+// ========================================
+@media (max-width: $mobile-max) {
+  .BaseChat {
+    // Full width on mobile
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    
+    // Ensure proper bottom spacing on homepage for footer
+    &:not([data-chat-started="true"]) {
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    // Chat container adjustments
+    .chat-container {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      margin-left: 0 !important;
+      padding: 0.5rem !important;
+      height: auto !important;
+      min-height: auto !important;
+      overflow: visible !important;
+      
+      // Remove internal scroll - let page scroll naturally
+      > div {
+        overflow: visible !important;
+        height: auto !important;
+        flex: none !important;
+      }
+
+      // Fix parent container that wraps messages and prompt bar
+      > div > div.relative {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+    // Homepage intro section
+    #intro {
+      margin-top: 8vh !important;
+      padding: 1rem !important;
+
+      // Logo
+      img {
+        max-width: 90vw !important;
+        height: auto !important;
+      }
+
+      // Headings
+      p {
+        font-size: 0.75rem !important;
+        line-height: 1.3 !important;
+        padding: 0 0.5rem !important;
+      }
+    }
+
+    // Textarea / prompt box - Fix division issue on mobile
+    #prompt-bar {
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      margin-top: 0.5rem !important;
+      position: sticky !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 50 !important;
+      background: var(--bolt-elements-background-depth-1, #0a0e17) !important;
+      border-top: 1px solid var(--bolt-elements-borderColor, rgba(255, 255, 255, 0.1)) !important;
+      
+      // Remove ALL outlines from prompt bar and its children
+      * {
+        &:focus,
+        &:focus-visible,
+        &:focus-within {
+          outline: none !important;
+          outline-width: 0 !important;
+          outline-style: none !important;
+          outline-offset: 0 !important;
+        }
+      }
+
+      // Fix negative margins that cause division on mobile
+      &[class*="-mx-"],
+      &[class*="mx-"] {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+
+      // Fix any px-4 padding that might cause issues
+      &[class*="px-"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      // Inner wrapper container - ensure full width
+      > div:first-child {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 0.5rem !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      // The shadow/background container - unified appearance
+      > div:first-child > div:last-child {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0.5rem !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        
+        // Remove any focus outlines or borders on container
+        &:focus,
+        &:focus-within,
+        &:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+          border: 1px solid rgba(34, 197, 94, 0.5) !important; // Keep only the rounded green border
+        }
+      }
+
+      textarea {
+        font-size: 16px !important; // Prevent iOS zoom on focus
+        padding: 0.75rem 2.5rem 0.75rem 0.75rem !important;
+        line-height: 1.4 !important;
+        min-height: 80px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        border: none !important;
+        outline: none !important;
+        outline-offset: 0 !important;
+        resize: none !important;
+        display: block !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        background: transparent !important;
+        color: inherit !important;
+        box-shadow: none !important;
+
+        // Remove ALL focus outlines and borders (no rectangle on focus)
+        &:focus,
+        &:focus-visible,
+        &:focus-within,
+        &:active {
+          outline: none !important;
+          outline-offset: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+          -webkit-tap-highlight-color: transparent !important;
+        }
+
+        &::placeholder {
+          font-size: 0.8125rem !important;
+          line-height: 1.3 !important;
+        }
+      }
+
+      // Ensure container doesn't get extra border or outline on focus
+      > div:first-child > div:last-child {
+        // Remove any focus rectangles - only keep rounded border
+        &:focus,
+        &:focus-within,
+        &:focus-visible,
+        &:active,
+        &:has(textarea:focus) {
+          outline: none !important;
+          outline-width: 0 !important;
+          outline-style: none !important;
+          outline-color: transparent !important;
+          box-shadow: none !important;
+          // Keep only the existing rounded border - no rectangle outline
+          border: 1px solid rgba(34, 197, 94, 0.5) !important;
+          border-radius: 0.5rem !important;
+        }
+      }
+
+      // Additional fix: prevent any outline on the entire prompt bar when textarea is focused
+      &:has(textarea:focus),
+      &:has(textarea:focus-visible) {
+        outline: none !important;
+        outline-width: 0 !important;
+        box-shadow: none !important;
+      }
+
+      // Send button
+      .send-button {
+        right: 0.5rem !important;
+        top: 0.5rem !important;
+        width: 2rem !important;
+        height: 2rem !important;
+        z-index: 10 !important;
+      }
+
+      // Bottom controls - ensure they don't cause division
+      .flex.justify-between {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0.5rem 0.75rem !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        flex-wrap: wrap !important;
+      }
+
+      // Bottom controls
+      .prompt-controls {
+        padding: 0.5rem !important;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+
+        button {
+          font-size: 0.75rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        // Hide keyboard hint on mobile
+        .keyboard-hint {
+          display: none !important;
+        }
+      }
+    }
+
+    // Example prompts
+    #examples {
+      padding: 0 0.5rem !important;
+      margin-top: 1rem !important;
+
+      button {
+        padding: 0.625rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.3 !important;
+        text-align: left !important;
+
+        span {
+          font-size: 0.75rem !important;
+        }
+
+        .icon {
+          font-size: 0.875rem !important;
+        }
+      }
+    }
+
+    // Exchange logos
+    .exchange-logos-container {
+      padding: 0 0.5rem !important;
+      gap: 0.5rem !important;
+
+      p {
+        font-size: 0.6875rem !important;
+        margin-bottom: 0.5rem !important;
+      }
+
+      img {
+        height: 0.75rem !important;
+      }
+    }
+
+    // Token counter
+    .token-counter {
+      font-size: 0.75rem !important;
+      padding: 0.375rem 0.75rem !important;
+    }
+  }
+}
+
+@media (min-width: $tablet-min) and (max-width: $tablet-max) {
+  .BaseChat {
+    #intro {
+      margin-top: 12vh !important;
+
+      img {
+        max-width: 70vw !important;
+      }
+    }
+
+    #prompt-bar {
+      max-width: 90% !important;
+
+      textarea {
+        font-size: 15px !important;
+        padding: 1rem 3rem 1rem 1rem !important;
+      }
+    }
+
+    #examples {
+      max-width: 90% !important;
+
+      button {
+        font-size: 0.875rem !important;
+        padding: 0.75rem 1rem !important;
+      }
+    }
+  }
+}
+
+// ========================================
+// WORKBENCH RESPONSIVE
+// ========================================
+@media (max-width: $mobile-max) {
+  .Workbench,
+  .workbench-container {
+    // Stack vertically on mobile
+    flex-direction: column !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+
+    // Hide workbench when chat is active on mobile
+    &.chat-active {
+      display: none !important;
+    }
+
+    // Inner workbench container
+    .workbench-inner {
+      height: 100% !important;
+      overflow: hidden !important;
+      border-radius: 0 !important;
+      border-left: none !important;
+      border-right: none !important;
+    }
+
+    // Panel adjustments - force vertical stacking
+    .panel-group {
+      flex-direction: column !important;
+      height: 100% !important;
+
+      // Horizontal panel groups should stack vertically
+      &[data-panel-group-direction="horizontal"] {
+        flex-direction: column !important;
+      }
+
+      // Vertical panel groups stay vertical but ensure full width
+      &[data-panel-group-direction="vertical"] {
+        flex-direction: column !important;
+        width: 100% !important;
+      }
+
+      .panel {
+        min-width: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 200px !important;
+      }
+    }
+
+    // React resizable panels specific overrides
+    [data-panel-group] {
+      flex-direction: column !important;
+      
+      [data-panel] {
+        min-width: 100% !important;
+        width: 100% !important;
+      }
+    }
+
+    // Code editor panel
+    .code-editor-panel,
+    [data-panel-id*="editor"] {
+      min-height: 250px !important;
+      max-height: 40vh !important;
+      height: auto !important;
+      flex-shrink: 0 !important;
+
+      .editor-header,
+      > div:first-child {
+        padding: 0.5rem !important;
+        font-size: 0.75rem !important;
+        min-height: 44px !important; // Touch target size
+        flex-wrap: wrap !important;
+        gap: 0.25rem !important;
+
+        button {
+          min-height: 44px !important; // Touch target
+          min-width: 44px !important;
+          padding: 0.5rem !important;
+          font-size: 0.75rem !important;
+          flex-shrink: 0 !important;
+
+          span:not([class*='i-']):not([class*='icon']) {
+            display: none !important;
+          }
+        }
+      }
+    }
+
+    // Chart panel
+    .chart-panel,
+    [data-panel-id*="chart"] {
+      min-height: 250px !important;
+      max-height: 35vh !important;
+      height: auto !important;
+      flex-shrink: 0 !important;
+
+      .chart-header,
+      > div:first-child {
+        padding: 0.5rem !important;
+        font-size: 0.75rem !important;
+        min-height: 44px !important; // Touch target size
+      }
+
+      // Ensure chart content is scrollable
+      > div:last-child {
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+    }
+
+    // Logs/Terminal panel
+    .logs-panel,
+    .terminal-panel,
+    [data-panel-id*="terminal"],
+    [data-panel-id*="logs"] {
+      min-height: 200px !important;
+      max-height: 30vh !important;
+      height: auto !important;
+      flex-shrink: 0 !important;
+
+      .terminal-header,
+      > div:first-child {
+        padding: 0.5rem !important;
+        font-size: 0.75rem !important;
+        min-height: 44px !important; // Touch target size
+
+        button {
+          min-height: 44px !important; // Touch target
+          min-width: 44px !important;
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.75rem !important;
+        }
+      }
+
+      .terminal,
+      > div:last-child {
+        font-size: 0.75rem !important;
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+    }
+
+    // Backtest metrics panel
+    .backtest-panel,
+    [data-panel-id*="backtest"],
+    [data-panel-id*="metrics"] {
+      min-height: 250px !important;
+      max-height: 100% !important;
+      height: auto !important;
+      flex-shrink: 0 !important;
+
+      .backtest-header,
+      > div:first-child {
+        padding: 0.5rem !important;
+        font-size: 0.75rem !important;
+        min-height: 44px !important; // Touch target size
+      }
+
+      .metric-card {
+        padding: 0.5rem !important;
+        min-height: 60px !important; // Touch target for cards
+
+        .metric-label {
+          font-size: 0.6875rem !important;
+        }
+
+        .metric-value {
+          font-size: 1rem !important;
+        }
+      }
+
+      // Ensure metrics content is scrollable
+      > div:last-child {
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+    }
+
+    // Resize handles - make them thicker on mobile for better touch targets
+    .resize-handle,
+    [data-panel-resize-handle] {
+      min-height: 24px !important; // Larger touch target
+      min-width: 24px !important;
+      cursor: row-resize !important; // Default to row-resize on mobile
+      touch-action: none !important;
+      
+      &.horizontal,
+      &[data-panel-resize-handle-direction="horizontal"] {
+        height: 24px !important;
+        cursor: row-resize !important;
+        width: 100% !important;
+      }
+
+      &.vertical,
+      &[data-panel-resize-handle-direction="vertical"] {
+        width: 24px !important;
+        height: 100% !important;
+        cursor: row-resize !important; // Use row-resize on mobile even for vertical
+      }
+    }
+
+    // Disable resize handles on mobile - panels are auto-stacked
+    [data-panel-resize-handle] {
+      pointer-events: none !important;
+      opacity: 0.3 !important;
+    }
+
+    // Toggle chat/workbench button on mobile
+    .toggle-view-button {
+      position: fixed !important;
+      bottom: 60px !important;
+      right: 1rem !important;
+      z-index: 1000 !important;
+      padding: 0.75rem !important;
+      border-radius: 50% !important;
+      background: var(--bolt-elements-button-primary-background) !important;
+      color: var(--bolt-elements-button-primary-text) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+      min-width: 48px !important;
+      min-height: 48px !important;
+    }
+
+    // Ensure workbench padding is minimal on mobile
+    .workbench-container > div {
+      padding: 0.25rem !important;
+    }
+
+    // Improve scrolling within panels
+    [data-panel],
+    .panel {
+      overflow: hidden !important;
+
+      > div:last-child {
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+      }
+    }
+
+    // Ensure buttons in workbench headers are touch-friendly
+    button {
+      min-height: 44px !important;
+      min-width: 44px !important;
+      touch-action: manipulation !important;
+    }
+
+    // Better spacing for mobile
+    .workbench-inner {
+      gap: 0.5rem !important;
+    }
+
+    // Improve table scrolling on mobile
+    table {
+      display: block !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      width: 100% !important;
+
+      thead, tbody {
+        display: block !important;
+      }
+
+      tr {
+        display: table !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+      }
+    }
+  }
+}
+
+@media (min-width: $tablet-min) and (max-width: $tablet-max) {
+  .Workbench,
+  .workbench-container {
+    // On tablet, allow side-by-side but with adjusted widths
+    .chat-container {
+      width: min(400px, 35vw) !important;
+    }
+
+    .workbench-inner {
+      flex: 1 !important;
+    }
+
+    // Adjust panel sizes
+    .panel {
+      .panel-header {
+        padding: 0.625rem !important;
+        font-size: 0.8125rem !important;
+      }
+
+      button {
+        padding: 0.5rem 0.875rem !important;
+        font-size: 0.8125rem !important;
+      }
+    }
+  }
+}
+
+// ========================================
+// CHAT WINDOW (Messages) RESPONSIVE
+// ========================================
+@media (max-width: $mobile-max) {
+  // Ensure messages container and prompt bar are unified
+  .chat-container > div > div.relative {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .messages-container {
+    padding: 0.5rem !important;
+
+    .message {
+      padding: 0.75rem !important;
+      font-size: 0.875rem !important;
+      line-height: 1.5 !important;
+
+      // User message
+      &.user-message {
+        padding: 0.625rem 0.75rem !important;
+
+        .message-content {
+          font-size: 0.875rem !important;
+        }
+      }
+
+      // Assistant message
+      &.assistant-message {
+        padding: 0.75rem !important;
+
+        .message-content {
+          font-size: 0.875rem !important;
+
+          // Code blocks in messages
+          pre {
+            font-size: 0.75rem !important;
+            padding: 0.5rem !important;
+            overflow-x: auto !important;
+
+            code {
+              font-size: 0.75rem !important;
+            }
+          }
+
+          // Inline code
+          code {
+            font-size: 0.8125rem !important;
+            padding: 0.125rem 0.25rem !important;
+          }
+
+          // Lists
+          ul, ol {
+            padding-left: 1.25rem !important;
+            font-size: 0.875rem !important;
+          }
+
+          // Headings in messages
+          h1, h2, h3, h4, h5, h6 {
+            font-size: 1rem !important;
+            margin-top: 0.75rem !important;
+            margin-bottom: 0.5rem !important;
+          }
+        }
+
+        // Copy button
+        .copy-button {
+          padding: 0.375rem !important;
+          font-size: 0.75rem !important;
+        }
+      }
+
+      // Streaming indicator
+      .streaming-indicator {
+        scale: 0.9 !important;
+      }
+    }
+  }
+}
+
+@media (min-width: $tablet-min) and (max-width: $tablet-max) {
+  .messages-container {
+    padding: 1rem !important;
+
+    .message {
+      font-size: 0.9375rem !important;
+
+      pre code {
+        font-size: 0.8125rem !important;
+      }
+    }
+  }
+}
+
+// ========================================
+// GENERAL MOBILE UTILITIES
+// ========================================
+@media (max-width: $mobile-max) {
+  // Ensure touch targets are at least 44x44px
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px !important;
+  }
+
+  // Prevent text from being too small
+  * {
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+
+  // Improve scrolling performance
+  * {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+  }
+
+  // Hide scrollbars on mobile for cleaner UI
+  .hide-scrollbar-mobile {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+
+    &::-webkit-scrollbar {
+      display: none !important;
+    }
+  }
+
+  // Full width containers
+  .container,
+  .max-w-chat {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  // Adjust spacing for mobile
+  .space-y-6 {
+    gap: 1rem !important;
+  }
+
+  .space-y-4 {
+    gap: 0.75rem !important;
+  }
+
+  .space-y-2 {
+    gap: 0.5rem !important;
+  }
+}
+
+// ========================================
+// ORIENTATION CHANGES
+// ========================================
+@media (max-width: $mobile-max) and (orientation: landscape) {
+  // Adjust heights for landscape mode
+  #intro {
+    margin-top: 5vh !important;
+  }
+
+  #prompt-bar textarea {
+    min-height: 60px !important;
+  }
+
+  .workbench-container {
+    height: 100vh !important;
+  }
+}
+
+// ========================================
+// ACCESSIBILITY IMPROVEMENTS
+// ========================================
+@media (max-width: $mobile-max) {
+  // Improve focus indicators on mobile
+  *:focus-visible {
+    outline: 2px solid var(--bolt-elements-focus) !important;
+    outline-offset: 2px !important;
+  }
+
+  // Larger tap targets for better accessibility
+  button,
+  a,
+  [role='button'] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}

@@ -1,0 +1,95 @@
+Implement constructor
+tip
+This article is part of a tutorial about creating a custom indicator. We recommend that you follow the guide from the start.
+
+CustomIndicator has the required constructor field that you will specify at this part of the tutorial. To do this, assign an ES5 constructor function to constructor. The function should contain the main method that calculates indicator data. To implement the method, follow the steps below.
+
+For a thorough understanding of the constructor implementation, consider the Constructor article.
+
+1. Handle method arguments
+The main method accepts the following parameters:
+
+ctx — context that stores an indicator state. It includes information about the current symbol, resolution, OHLC values of the current bar, and more.
+inputs — an array of the input parameters' values. Elements in the array are arranged in the same order as inputs in metainfo.
+Handle the method arguments as follows:
+
+constructor: function () {
+    this.main = function (ctx, inputs) {
+        this._context = ctx;
+        this._input = inputs;
+
+        var length = this._input(0);
+        var offset = this._input(2);
+        var smoothingLine = this._input(3);
+        var smoothingLength = this._input(4);
+         // If this._input(1) returns 'close', PineJS.Std.close(this._context) will be called
+        var source = PineJS.Std[this._input(1)](this._context);
+    }
+}
+
+
+One of the indicator's input parameters is Source. The parameter specifies certain bar values, such as close or open price, that will be used in the indicator calculations. To get the required values, you should call the corresponding method from PineJSStd. For example, if the close price is specified as source, call the close method.
+
+2. Call setMinimumAdditionalDepth
+Calculating any Moving Averages requires extra historical bars. Usually the library can calculate the number of extra bars to request from datafeed. However, in this tutorial, you implement a Smoothing Line which is a Moving Average calculated based on another Moving Average. In this exceptional case, you should specify the number of extra bars manually by calling the setMinimumAdditionalDepth method.
+
+Call setMinimumAdditionalDepth and pass the sum of the Length and Smoothing Length values as a parameter:
+
+this._context.setMinimumAdditionalDepth(length + smoothingLength);
+
+3. Call new_var
+The library calls the main method for each bar of the main series. To access values you get on the previous iterations, you should call the new_var method that creates a special variable.
+
+In this tutorial, you need to store the main series to use it as the input to another calculation. To do this, create the series variable as follows:
+
+var series = this._context.new_var(source);
+
+4. Calculate data
+For SMA
+To calculate the SMA values, use the sma method. The method returns a number — the SMA value for the current bar.
+
+var sma = PineJS.Std.sma(series, length, this._context);
+
+Additionally, you should store all SMA values to use them in the Smoothing Line calculations. To do this, create the sma_series variable with new_var:
+
+var sma_series = this._context.new_var(sma);
+
+For Smoothing Line
+The Smoothing Line is a Moving Average calculated based on the SMA data. Depending on the type specified in the Smoothing Line input parameter, you should call either sma, ema, or wma method to calculate the values:
+
+var smoothedMA;
+    if (smoothingLine === "EMA") {
+    smoothedMA = PineJS.Std.ema(
+        sma_series,
+        smoothingLength,
+        this._context
+    );
+    } else if (smoothingLine === "WMA") {
+    smoothedMA = PineJS.Std.wma(
+        sma_series,
+        smoothingLength,
+        this._context
+    );
+    } else {  // if (smoothingLine === "SMA") {
+    smoothedMA = PineJS.Std.sma(
+        sma_series,
+        smoothingLength,
+        this._context
+    );
+}
+
+5. Return values
+Return the calculated values for the SMA and Smoothing Line as follows:
+
+return [
+    { value: sma, offset: offset },
+    { value: smoothedMA, offset: offset },
+];
+
+Complete code
+At this stage, you have implemented the constructor function and assigned it to the constructor field.
+
+Expand to view the complete code for the constructor.
+
+Tutorial results
+This was the final step of the custom indicator implementation. You have created a custom indicator and specified its appearance and data.

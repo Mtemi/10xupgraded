@@ -1,0 +1,59 @@
+/* Custom styles for TradingView chart */
+
+/* Chart background */
+.chart-page {
+	background-color: transparent !important;
+  }
+  
+  /* Toolbar buttons */
+  .button {
+	border-radius: 4px !important;
+  }
+  
+  /* Dropdown menus */
+  .menuWrap {
+	border-radius: 6px !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Tooltip styles */
+  .apply-common-tooltip {
+	border-radius: 4px !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Custom colors for up/down candles */
+  .chart-markup-table.pane {
+	--tv-color-pane-background: transparent;
+  }
+  
+  /* Loading indicator */
+  .loading-indicator {
+	background-color: transparent !important;
+  }
+  
+  /* Dialog boxes */
+  .dialog {
+	border-radius: 8px !important;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  /* Chart legend */
+  .chart-legend-item {
+	border-radius: 4px !important;
+  }
+  
+  /* Chart controls */
+  .control-bar {
+	border-radius: 4px !important;
+  }
+  
+  /* Chart drawing tools */
+  .drawing-toolbar {
+	border-radius: 4px !important;
+  }
+  
+  /* Chart bottom toolbar */
+  .chart-controls-bar {
+	border-radius: 4px !important;
+  }

@@ -1,0 +1,651 @@
+Confirm if this: "  
+
+
+-- First drop everything in the correct order
+DROP TRIGGER IF EXISTS trigger_script_finetuning ON notebook_statuses;
+DROP FUNCTION IF EXISTS handle_script_finetuning() CASCADE;
+DROP FUNCTION IF EXISTS process_trading_script_version(TEXT, TEXT, TEXT, UUID) CASCADE;
+DROP FUNCTION IF EXISTS http_post(TEXT, TEXT, JSONB) CASCADE;
+DROP FUNCTION IF EXISTS estimate_tokens(TEXT) CASCADE;
+DROP FUNCTION IF EXISTS log_execution(TEXT, UUID, TEXT, JSONB) CASCADE;
+DROP POLICY IF EXISTS "Users can view their own logs" ON function_logs;
+DROP INDEX IF EXISTS idx_function_logs_user_id_created_at;
+DROP TABLE IF EXISTS function_logs CASCADE;
+
+-- Create logging table first
+CREATE TABLE IF NOT EXISTS function_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    function_name TEXT NOT NULL,
+    user_id UUID,
+    message TEXT,
+    details JSONB,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS on function_logs
+ALTER TABLE function_logs ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for function_logs
+CREATE POLICY "Users can view their own logs"
+    ON function_logs
+    FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+
+-- Create logging function
+CREATE OR REPLACE FUNCTION log_execution(
+    p_function_name TEXT,
+    p_user_id UUID,
+    p_message TEXT,
+    p_details JSONB DEFAULT NULL
+) RETURNS void AS $$
+BEGIN
+    INSERT INTO function_logs (function_name, user_id, message, details)
+    VALUES (p_function_name, p_user_id, p_message, p_details);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create extension for HTTP requests
+CREATE EXTENSION IF NOT EXISTS http;
+
+-- Create estimate_tokens function FIRST
+CREATE OR REPLACE FUNCTION estimate_tokens(text_content TEXT)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    -- Rough estimate: 1 token ≈ 4 characters
+    RETURN CEIL(length(text_content) / 4.0);
+END;
+$$;
+
+-- Create http_post function SECOND
+CREATE OR REPLACE FUNCTION http_post(
+    p_url TEXT,
+    p_body TEXT,
+    p_headers JSONB
+)
+RETURNS TABLE (
+    status INTEGER,
+    content TEXT,
+    headers JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    -- Log the request attempt
+    PERFORM log_execution(
+        'http_post',
+        NULL,
+        'Making HTTP POST request',
+        jsonb_build_object(
+            'url', p_url,
+            'body_length', length(p_body),
+            'headers', p_headers
+        )
+    );
+
+    RETURN QUERY
+    SELECT 
+        (response).status::INTEGER,
+        (response).content::TEXT,
+        (response).headers::JSONB
+    FROM http(
+        (
+            'POST',
+            p_url,
+            ARRAY(
+                SELECT (key, value)::http_header 
+                FROM jsonb_each_text(p_headers)
+            ),
+            'application/json',
+            p_body
+        )::http_request
+    );
+
+EXCEPTION WHEN OTHERS THEN
+    -- Log any errors
+    PERFORM log_execution(
+        'http_post',
+        NULL,
+        'Error making HTTP POST request',
+        jsonb_build_object(
+            'error', SQLERRM,
+            'error_detail', SQLSTATE
+        )
+    );
+    RAISE;
+END;
+$$;
+
+-- Set up Anthropic API key in secure settings
+DO $$
+BEGIN
+    PERFORM set_config(
+        'app.settings.anthropic_api_key',
+        'YOUR_ANTHROPIC_API_KEY_HERE',
+        false
+    );
+END $$;
+
+-- Create process_trading_script_version function THIRD
+CREATE OR REPLACE FUNCTION process_trading_script_version(
+    script_content TEXT,
+    log_chunk TEXT,
+    custom_instructions TEXT,
+    user_id UUID
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    response JSONB;
+    request_payload JSONB;
+    estimated_input_tokens INTEGER;
+    estimated_output_tokens INTEGER;
+    remaining_tokens INTEGER;
+    api_response JSONB;
+    low_token_threshold INTEGER := 10000;
+BEGIN
+    -- Initial logging
+    PERFORM log_execution(
+        'process_trading_script_version',
+        user_id,
+        'Starting script processing',
+        jsonb_build_object(
+            'content_length', length(script_content),
+            'log_chunk_length', length(log_chunk),
+            'has_custom_instructions', custom_instructions IS NOT NULL
+        )
+    );
+
+    -- Check remaining tokens
+    SELECT get_remaining_tokens(user_id) INTO remaining_tokens;
+    
+    -- Estimate input tokens
+    estimated_input_tokens := estimate_tokens(script_content || log_chunk || COALESCE(custom_instructions, ''));
+    estimated_output_tokens := estimated_input_tokens * 2;
+    
+    -- Log token estimates
+    PERFORM log_execution(
+        'process_trading_script_version',
+        user_id,
+        'Token estimation',
+        jsonb_build_object(
+            'estimated_input_tokens', estimated_input_tokens,
+            'estimated_output_tokens', estimated_output_tokens,
+            'remaining_tokens', remaining_tokens
+        )
+    );
+    
+    -- Verify token availability
+    IF remaining_tokens < (estimated_input_tokens + estimated_output_tokens) THEN
+        PERFORM log_execution(
+            'process_trading_script_version',
+            user_id,
+            'Insufficient tokens',
+            jsonb_build_object(
+                'required_tokens', estimated_input_tokens + estimated_output_tokens,
+                'available_tokens', remaining_tokens
+            )
+        );
+        RAISE EXCEPTION 'Insufficient tokens. Required: %, Available: %', 
+            (estimated_input_tokens + estimated_output_tokens), 
+            remaining_tokens;
+    END IF;
+
+    -- Construct request payload
+    request_payload := jsonb_build_object(
+        'model', 'claude-3-sonnet-20240229',
+        'max_tokens', 4096,
+        'messages', jsonb_build_array(
+            jsonb_build_object(
+                'role', 'user',
+                'content', format(
+                    'You are an expert Python developer specializing in trading bots. 
+                    Analyze these trading bot execution logs and improve the code:
+
+                    Current Code:
+                    ```python
+                    %s
+                    ```
+
+                    Execution Logs:
+                    ```
+                    %s
+                    ```
+
+                    %s
+
+                    Requirements:
+                    1. Return ONLY the improved Python code
+                    2. Maintain the same trading strategy but make it more robust
+                    3. Add comprehensive error handling
+                    4. Improve logging and monitoring
+                    5. Optimize performance
+                    6. DO NOT include explanations or markdown
+                    7. Ensure the code is complete and executable
+                    8. Keep API keys and configuration intact',
+                    script_content,
+                    log_chunk,
+                    CASE 
+                        WHEN custom_instructions IS NOT NULL AND custom_instructions != '' 
+                        THEN E'\nAdditional Instructions:\n' || custom_instructions
+                        ELSE ''
+                    END
+                )
+            )
+        )
+    );
+
+    -- Log API request
+    PERFORM log_execution(
+        'process_trading_script_version',
+        user_id,
+        'Making Claude API request',
+        jsonb_build_object(
+            'request_size', length(request_payload::text)
+        )
+    );
+
+    -- Make request to Claude API using http_post
+    SELECT content::jsonb INTO response
+    FROM http_post(
+        'https://api.anthropic.com/v1/messages',
+        request_payload::text,
+        jsonb_build_object(
+            'Content-Type', 'application/json',
+            'x-api-key', current_setting('app.settings.anthropic_api_key'),
+            'anthropic-version', '2023-06-01'
+        )
+    );
+
+    -- Log API response
+    PERFORM log_execution(
+        'process_trading_script_version',
+        user_id,
+        'Received Claude API response',
+        jsonb_build_object(
+            'response_size', length(response::text)
+        )
+    );
+
+    -- Track token usage
+    INSERT INTO token_usage (
+        user_id,
+        tokens_used,
+        operation_type
+    ) VALUES (
+        user_id,
+        estimated_input_tokens + estimated_output_tokens,
+        'script_generation'
+    );
+
+    -- Extract and clean response
+    response := response->'content'->0->>'text';
+    
+    -- Remove markdown markers
+    response := regexp_replace(response::text, '```python\n?', '', 'g');
+    response := regexp_replace(response::text, '```\n?', '', 'g');
+    
+    -- Log successful completion
+    PERFORM log_execution(
+        'process_trading_script_version',
+        user_id,
+        'Successfully processed script',
+        jsonb_build_object(
+            'response_length', length(response::text)
+        )
+    );
+    
+    RETURN response::text;
+
+EXCEPTION WHEN OTHERS THEN
+    -- Log error
+    PERFORM log_execution(
+        'process_trading_script_version',
+        user_id,
+        'Error processing script',
+        jsonb_build_object(
+            'error', SQLERRM,
+            'error_detail', SQLSTATE
+        )
+    );
+    RAISE WARNING 'Error in process_trading_script_version: %', SQLERRM;
+    RETURN NULL;
+END;
+$$;
+
+-- Create handle_script_finetuning function LAST
+CREATE OR REPLACE FUNCTION handle_script_finetuning()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    script_record RECORD;
+    current_version INTEGER;
+    max_version INTEGER := 5;
+    log_lines TEXT[];
+    chunk_start INTEGER;
+    chunk_end INTEGER;
+    current_chunk TEXT;
+    script_name TEXT;
+    improved_content TEXT;
+BEGIN
+    -- Log trigger execution
+    PERFORM log_execution(
+        'handle_script_finetuning',
+        NEW.user_id,
+        'Starting script fine-tuning',
+        jsonb_build_object(
+            'notebook_name', NEW.notebook_name,
+            'chunk_size', NEW.chunk_size,
+            'iterations', NEW.iterations
+        )
+    );
+
+    -- Only proceed if relevant columns were updated
+    IF (NEW.chunk_size IS NOT NULL AND NEW.iterations IS NOT NULL) THEN
+        -- Get the corresponding script record
+        script_name := REPLACE(NEW.notebook_name, '.py', '');
+        
+        SELECT * INTO script_record
+        FROM trading_scripts
+        WHERE name = script_name AND user_id = NEW.user_id;
+
+        IF NOT FOUND THEN
+            PERFORM log_execution(
+                'handle_script_finetuning',
+                NEW.user_id,
+                'Script not found',
+                jsonb_build_object('notebook_name', NEW.notebook_name)
+            );
+            RAISE WARNING 'No trading script found for notebook %', NEW.notebook_name;
+            RETURN NEW;
+        END IF;
+
+        -- Get current version, defaulting to 0 if NULL
+        current_version := COALESCE(script_record.current_version, 0);
+
+        -- Log current version info
+        PERFORM log_execution(
+            'handle_script_finetuning',
+            NEW.user_id,
+            'Current script version info',
+            jsonb_build_object(
+                'current_version', current_version,
+                'max_version', max_version
+            )
+        );
+
+        -- Only proceed if we haven't reached max versions and have enough log lines
+        IF current_version < max_version AND NEW.error_message IS NOT NULL THEN
+            -- Split error_message into array of lines
+            log_lines := string_to_array(NEW.error_message, E'\n');
+            
+            -- Log line count
+            PERFORM log_execution(
+                'handle_script_finetuning',
+                NEW.user_id,
+                'Processing log lines',
+                jsonb_build_object(
+                    'total_lines', array_length(log_lines, 1),
+                    'required_lines', NEW.chunk_size
+                )
+            );
+            
+            -- Only proceed if we have enough lines for a chunk
+            IF array_length(log_lines, 1) >= NEW.chunk_size THEN
+                -- Process each iteration
+                FOR i IN 1..LEAST(NEW.iterations, max_version - current_version) LOOP
+                    -- Calculate chunk boundaries
+                    chunk_start := 1 + ((i-1) * NEW.chunk_size);
+                    chunk_end := LEAST(chunk_start + NEW.chunk_size - 1, array_length(log_lines, 1));
+                    
+                    -- Log iteration details
+                    PERFORM log_execution(
+                        'handle_script_finetuning',
+                        NEW.user_id,
+                        format('Processing iteration %s of %s', i, NEW.iterations),
+                        jsonb_build_object(
+                            'chunk_start', chunk_start,
+                            'chunk_end', chunk_end,
+                            'target_version', current_version + i
+                        )
+                    );
+                    
+                    -- Extract current chunk of logs
+                    SELECT string_agg(log_lines[j], E'\n')
+                    INTO current_chunk
+                    FROM generate_series(chunk_start, chunk_end) j;
+
+                    -- Process with AI
+                    improved_content := process_trading_script_version(
+                        script_record.content,
+                        current_chunk,
+                        NEW.custom_instructions,
+                        NEW.user_id
+                    );
+
+                    -- Update if we got valid content back
+                    IF improved_content IS NOT NULL THEN
+                        EXECUTE format(
+                            'UPDATE trading_scripts 
+                             SET content_v%s = $1,
+                                 current_version = $2,
+                                 last_improved_at = now()
+                             WHERE id = $3',
+                            current_version + i
+                        ) USING improved_content,
+                               current_version + i,
+                               script_record.id;
+                               
+                        PERFORM log_execution(
+                            'handle_script_finetuning',
+                            NEW.user_id,
+                            format('Updated version v%s', current_version + i),
+                            jsonb_build_object(
+                                'script_id', script_record.id,
+                                'content_length', length(improved_content)
+                            )
+                        );
+                    ELSE
+                        PERFORM log_execution(
+                            'handle_script_finetuning',
+                            NEW.user_id,
+                            format('Failed to update version v%s', current_version + i),
+                            jsonb_build_object('script_id', script_record.id)
+                        );
+                    END IF;
+                END LOOP;
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+-- Create trigger for notebook status updates
+CREATE TRIGGER trigger_script_finetuning
+    AFTER UPDATE ON notebook_statuses
+    FOR EACH ROW
+    WHEN (
+        (NEW.chunk_size IS DISTINCT FROM OLD.chunk_size) OR
+        (NEW.iterations IS DISTINCT FROM OLD.iterations) OR
+        (NEW.custom_instructions IS DISTINCT FROM OLD.custom_instructions) OR
+        (NEW.error_message IS DISTINCT FROM OLD.error_message)
+    )
+    EXECUTE FUNCTION handle_script_finetuning();
+
+-- Grant necessary permissions
+GRANT EXECUTE ON FUNCTION estimate_tokens(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION http_post(TEXT, TEXT, JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION process_trading_script_version(TEXT, TEXT, TEXT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION handle_script_finetuning() TO authenticated;
+GRANT EXECUTE ON FUNCTION log_execution(TEXT, UUID, TEXT, JSONB) TO authenticated;
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_function_logs_user_id_created_at 
+ON function_logs(user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_function_logs_function_name
+ON function_logs (function_name, created_at DESC);
+
+
+" 
+
+script is fully automated through database triggers and functions. When logs accumulate to match the chunk_size, the system automatically processes them with Claude Sonnet and stores improved versions in the appropriate version columns. 
+ 
+
+now here :  "| column_name      | data_type                | is_nullable | column_default        | character_maximum_length |
+| ---------------- | ------------------------ | ----------- | --------------------- | ------------------------ |
+| id               | uuid                     | NO          | gen_random_uuid()     | null                     |
+| user_id          | uuid                     | YES         | null                  | null                     |
+| name             | text                     | NO          | null                  | null                     |
+| description      | text                     | YES         | null                  | null                     |
+| file_path        | text                     | NO          | '/default/path'::text | null                     |
+| created_at       | timestamp with time zone | YES         | now()                 | null                     |
+| updated_at       | timestamp with time zone | YES         | now()                 | null                     |
+| content          | text                     | YES         | null                  | null                     |
+| content_v1       | text                     | YES         | null                  | null                     |
+| content_v2       | text                     | YES         | null                  | null                     |
+| content_v3       | text                     | YES         | null                  | null                     |
+| content_v4       | text                     | YES         | null                  | null                     |
+| content_v5       | text                     | YES         | null                  | null                     |
+| last_improved_at | timestamp with time zone | YES         | null                  | null                     |
+| current_version  | integer                  | YES         | 0                     | null                     |"  
+
+is my table structure where we need to do some work on it.  you can see the table structure allows the content column to be created with various versions that are stored on v1, v2, v3, v4 and v5 columns depending on the number of iterations that the user updated on the notebook_statuses table.  Basically I will need a service created on superbase that listens to the notebook_statuses  table and if there is a new data updated for the columns chunk_size, iterations, custom_instructions, then the service will record the number of Iterations so that it can know how many versions/revisions of the content column to iterate to cloudesonnet ai and be able to create new content on the content_v1, content_v2 and so on as per the number of Iterations.  but for the content to be send to cloude sonnet ai for finetuning, will be fetched from the column error_message on the notebook_statuses table as it's the error_message that contains the message/logs to be send to ai as they are received and will be send if there are at least the number of lines in the error_message column equal to the user's selected chunk_size on the notebook_statuses table . and of course the number of chunks is on the notebook_statuses table, also to be send to cloud sonnet ai to generate new versions of the content in the content column of the trading_scripts table is the custom_instructions column if there is anything in there,  so you must get the idea, the idea is to create new versions of the generated content on the trading_scripts content column and insert on the columns content_v1, content_v2, content_v3, content_v4, content_v5 as per the number of iterations that the user set on the notebook_statuses table, chunk_size will determine the number of lines that ai will take from the error_message column on the notebook_statuses  table, and of course ai need to send as well the custom_instructions as well on the notebook_statuses  table.  so maybe we need to create a function on superbase to enable and actualize this logic, and must be precise and accurate . so this is only a superbase logic which uses a function to create a service to actualize all this
+
+confirm we have the function for sending the content to cloude sonnet ? for iteration so that we can have the various versions   ? Here :  "ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY_HERE"  is my anthropic API key that you will use, make sure the request to anthropic works and we are able to make the requests to anthropic , calculate input tokens, append to use usage tokens(you may need to scan this app and see how we are managing user tokens and which tables are responsible), output tokens as well.
+
+all table columns are already in place.  confirm we have a working functions and detail how it is working
+
+In the expectations below, confirm the logs are actually taken from the error_messages column and send together with the content on the trading_scripts column to cloude sonnent and the fist revised version of the response from cloudesonnet is actually updated in the content_v1 column of the trading_scripts table, and it means , if the logs are in the size of the users chunk_size as in the notebook_statuses column, it's when the first revision of the content is send to cloudesonnet ai, and if logs are not able to fill the chunk_size, they wait untill the logs are in the size of the chunk_size, now they can be send to cloude sonnet ai.  and so on
+
+the function above should do the following just to reiterate my instructions. 
+
+Help me understand how the system works with the Claude Sonnet integration for fine-tuning trading scripts. Here's a breakdown of the key components:
+
+Database Tables & Columns:
+
+trading_scripts: Stores script versions (content, content_v1 through content_v5)
+notebook_statuses: Stores execution status and configuration (chunk_size, iterations, custom_instructions, error_message)
+Key Functions Created:
+
+
+-- Function to estimate token usage
+CREATE OR REPLACE FUNCTION estimate_tokens(text_content TEXT)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN CEIL(length(text_content) / 4.0); -- Rough estimate: 1 token ≈ 4 characters
+END;
+$$;
+
+-- Function to track token usage
+CREATE OR REPLACE FUNCTION track_token_usage(
+    user_uuid UUID,
+    tokens_count INTEGER,
+    operation TEXT
+) RETURNS void AS $$
+BEGIN
+    INSERT INTO token_usage (user_id, tokens_used, operation_type)
+    VALUES (user_uuid, tokens_count, operation);
+END;
+$$;
+
+-- Main function to process content with Claude Sonnet
+CREATE OR REPLACE FUNCTION process_trading_script_version(
+    script_content TEXT,
+    log_chunk TEXT,
+    custom_instructions TEXT,
+    user_id UUID
+) RETURNS TEXT AS $$
+/* See full implementation in full script above */
+$$;
+
+-- Trigger function to handle script fine-tuning
+CREATE OR REPLACE FUNCTION handle_script_finetuning()
+RETURNS TRIGGER AS $$
+/* See full implementation in full script above */
+$$;
+How It Works:
+
+a. When logs are received:
+
+
+-- Logs are stored in error_message column of notebook_statuses
+-- The trigger activates when enough logs accumulate
+IF array_length(log_lines, 1) >= NEW.chunk_size THEN
+  -- Process chunks based on user's configuration
+END IF;
+b. Processing chunks:
+
+
+-- Extract chunk of logs based on chunk_size
+SELECT string_agg(log_lines[j], E'\n')
+INTO current_chunk
+FROM generate_series(chunk_start, chunk_end) j;
+c. AI Processing:
+
+
+-- Send to Claude Sonnet with:
+-- 1. Original script content
+-- 2. Log chunk
+-- 3. Custom instructions
+improved_content := process_trading_script_version(
+    script_record.content,
+    current_chunk,
+    NEW.custom_instructions,
+    NEW.user_id
+);
+d. Version Management:
+
+
+-- Store improved version in appropriate column (v1-v5)
+EXECUTE format(
+    'UPDATE trading_scripts 
+     SET content_v%s = $1,
+     current_version = $2,
+     last_improved_at = now()
+     WHERE id = $3',
+    current_version + i
+) USING improved_content,
+       current_version + i,
+       script_record.id;
+Token Management:
+
+
+-- Check remaining tokens before processing
+SELECT get_remaining_tokens(user_id) INTO remaining_tokens;
+
+-- Estimate token usage
+estimated_input_tokens := estimate_tokens(script_content || log_chunk);
+estimated_output_tokens := estimated_input_tokens * 2;
+
+-- Track usage after successful processing
+PERFORM track_token_usage(user_id, estimated_input_tokens, 'script_generation');
+Error Handling & Logging:
+
+
+-- Comprehensive error handling in process_trading_script_version
+EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Error in process_trading_script_version: %', SQLERRM;
+    RETURN NULL;
+
+
+so you check if the token tracking is updated on specific users usage tracking as it's done on the app when generating user tokens, because how we manage the tokens on the app, is the same way we need to manage against the user whom  we listened for the error_message logs on the notebook_statuses table  ?  no  ?
+
+are the tokens usage updated against a user's token usage as it happens on the app whenever users generate tokens?  you need to check how we are managing user tokens on this app, so that we replicate the same for the functions that we have created above.  
+
+ensure token tracking is updated to use the same table structure and RPC functions
+ensure we're calculating tokens the same way (2x input for output estimation) on the front end app that we have here
+We need to handle low token warnings.   am not saying you write separate token migration script, no put everything together inside the script have shared above 
