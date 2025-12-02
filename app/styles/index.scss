@@ -10,11 +10,43 @@
 @import './components/workbench.scss';
 @import './components/mobile.scss';
 
-html,
-body {
-  height: 100%;
+html {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
   width: 100%;
+  max-width: 100vw;
+}
+
+body {
+  height: auto;
+  min-height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
   background-color: #000; /* Ensure dark background */
+  font-family: Inter, "SF Pro Text", -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", system-ui, ui-sans-serif, sans-serif;
+  line-height: 1.6;
+}
+
+/* Headings - Bitget-like hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: clamp(1.875rem, 2.5vw, 2.75rem); } /* ~30-44px */
+h2 { font-size: clamp(1.5rem, 2.0vw, 2.0rem); }    /* ~24-32px */
+h3 { font-size: clamp(1.25rem, 1.5vw, 1.5rem); }   /* ~20-24px */
+h4 { font-size: 1.125rem; }                        /* 18px */
+h5 { font-size: 1rem; }                            /* 16px */
+h6 { font-size: 0.875rem; }                        /* 14px */
+
+/* Body text */
+p, li, span, input, textarea, button {
+  font-weight: 400;
 }
 
 /* Global Scrollbar Styling - Very thin, subtle, matches theme */
@@ -104,11 +136,18 @@ textarea {
 
 textarea:focus {
   caret-color: var(--bolt-elements-textPrimary);
-  
+
   @media (max-width: 640px) {
     /* Ensure no zoom on focus for iOS */
     font-size: 16px;
     transform: translateZ(0);
+  }
+}
+
+/* Chatbox placeholder styling - white checkmarks with reduced transparency */
+.chatbox-placeholder {
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important; /* white with reduced transparency */
   }
 }
 
@@ -277,97 +316,94 @@ textarea:focus {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Homepage Cards & Buttons - Scoped to prevent workbench interference       */
+/* Day 2: Design System - Buttons & Cards                                     */
 /* -------------------------------------------------------------------------- */
 
-/* Only apply card/button styles to homepage elements (not workbench) */
-.BaseChat[data-chat-visible='true']:not(.workbench-active) {
-  /* Recolor raster logo via mask (uses PNG alpha as mask) */
-  .logo-mask {
-    display: inline-block;
-    -webkit-mask-image: url('/101x.png');
-    mask-image: url('/101x.png');
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    background-color: var(--accent-500);
-  }
-
-  /* Primary button (green) */
-  .btn-primary {
-    background: linear-gradient(180deg, var(--accent-400) 0%, var(--accent-500) 100%);
-    color: white;
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    transition: all 200ms ease;
-    border: 1px solid rgba(74, 222, 128, 0.2);
-    box-shadow: 0 6px 20px -10px rgba(74, 222, 128, 0.4);
-  }
-
-  .btn-primary:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:active {
-    filter: brightness(0.98);
-    transform: translateY(0);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  /* Outline accent button */
-  .btn-outline-accent {
-    background: transparent;
-    color: var(--accent-500);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    transition: all 200ms ease;
-    border: 2px solid rgba(74, 222, 128, 0.3);
-  }
-
-  .btn-outline-accent:hover {
-    border-color: var(--accent-500);
-    background: rgba(74, 222, 128, 0.1);
-  }
-
-  /* Standard card */
-  .card-standard {
-    background: var(--bolt-elements-bg-depth-2);
-    border: 1px solid var(--bolt-elements-borderColor);
-    border-radius: 12px;
-    padding: 0.75rem; /* 12px on mobile */
-
-    @media (min-width: 640px) {
-      padding: 1.25rem; /* 20px at sm+ */
-    }
-
-    @media (min-width: 1024px) {
-      padding: 1.5rem; /* 24px at lg+ */
-    }
-  }
-
-  .card-standard:hover {
-    border-color: var(--bolt-elements-borderColorActive);
-    box-shadow: 0 10px 24px -12px rgba(34, 211, 238, 0.25);
-  }
+/* Recolor raster logo via mask (uses PNG alpha as mask) */
+.logo-mask {
+  display: inline-block;
+  -webkit-mask-image: url('/101x.png');
+  mask-image: url('/101x.png');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  background-color: theme('colors.accent.500');
 }
 
-/* Ensure workbench components are not affected by homepage styles */
-.workbench,
-.workbench * {
-  /* Reset any homepage card/button styles */
+/* Primary button (green) */
+.btn-primary {
+  background: linear-gradient(180deg, theme('colors.accent.400') 0%, theme('colors.accent.500') 100%);
+  color: white;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  transition: all 200ms ease;
+  border: 1px solid theme('colors.alpha.accent.20');
+  box-shadow: 0 6px 20px -10px theme('colors.alpha.accent.40');
+}
+.btn-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  filter: brightness(0.98);
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Outline accent button */
+.btn-outline-accent {
+  background: transparent;
+  color: theme('colors.accent.500');
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  transition: all 200ms ease;
+  border: 2px solid theme('colors.alpha.accent.30');
+}
+.btn-outline-accent:hover {
+  border-color: theme('colors.accent.500');
+  background: theme('colors.alpha.accent.10');
+}
+
+/* Standard card */
+.card-standard {
+  background: var(--bolt-elements-bg-depth-2);
+  border: 1px solid var(--bolt-elements-borderColor);
+  border-radius: 12px;
+  padding: 0.75rem; /* 12px on mobile */
+}
+@media (min-width: 640px) {
+  .card-standard {
+    padding: 1.25rem; /* 20px at sm+ */
+  }
+}
+@media (min-width: 1024px) {
+  .card-standard {
+    padding: 1.5rem; /* 24px at lg+ */
+  }
+}
+.card-standard:hover {
+  border-color: var(--bolt-elements-borderColorActive);
+  box-shadow: 0 10px 24px -12px rgba(34, 211, 238, 0.25);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Workbench Protection - Prevent card/button styles from affecting workbench */
+/* -------------------------------------------------------------------------- */
+
+/* Reset card/button styles inside workbench to prevent interference */
+.workbench {
   .btn-primary,
   .btn-outline-accent,
-  .card-standard {
-    all: unset;
+  .card-standard,
+  .logo-mask {
+    all: revert;
   }
 }
