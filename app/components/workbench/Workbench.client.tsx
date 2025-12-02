@@ -678,12 +678,9 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
       <>
         {/* CollapsibleMenu removed - using Menu.client.tsx sidebar instead */}
         <div
-          className="relative workbench-container"
+          className="relative workbench-inner"
           style={{
-            width: isMobile() ? '100vw' : 'calc(100vw - min(480px, 40vw) - 64px)',
-            height: 'calc(100vh - var(--header-height))',
-            maxHeight: 'calc(100vh - var(--header-height))',
-            overflow: 'hidden'
+            width: isMobile() ? '100vw' : '100%'
           }}
         >
           <button
