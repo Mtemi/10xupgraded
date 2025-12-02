@@ -483,7 +483,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             height: 'calc(100vh - var(--header-height))',
             maxHeight: 'calc(100vh - var(--header-height))',
             overflow: 'hidden'
-          } : undefined}
+          } : {
+            height: 'auto',
+            minHeight: '100vh',
+            overflow: 'visible'
+          }}
         >
           {/* Menu - Only show when authenticated */}
           {isAuthenticated && (
@@ -518,13 +522,16 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               ref={scrollRef}
               className={classNames(
                 // Only use flex-1 and scroll when chat is started
-                chatStarted ? "flex-1 overflow-y-auto overflow-x-hidden" : "h-auto"
+                chatStarted ? "flex-1 overflow-y-auto overflow-x-hidden" : "h-auto overflow-visible"
               )}
               style={chatStarted ? {
                 overflowAnchor: 'none',
                 scrollBehavior: 'smooth',
                 maxHeight: '100%'
-              } : undefined}
+              } : {
+                overflow: 'visible',
+                height: 'auto'
+              }}
               data-chat-scroll-container
             >
             <div className={classNames(
