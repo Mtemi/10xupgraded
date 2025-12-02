@@ -235,15 +235,31 @@
   }
 }
 
-// Workbench container - Fixed height, no stretching
-.workbench-container {
-  position: fixed;
-  right: 0;
+// Workbench wrapper - Fixed height at viewport, stays in place while chat scrolls
+.workbench-wrapper {
+  height: calc(100vh - var(--header-height, 0px)) !important;
+  max-height: calc(100vh - var(--header-height, 0px)) !important;
   overflow: hidden;
+  position: sticky;
+  top: var(--header-height, 0px);
+  right: 0;
+  align-self: flex-start; // Prevent stretching to match chat container height
 
   @media (max-width: 768px) {
     position: relative;
     width: 100vw !important;
+    height: 50vh !important;
+    top: 0;
+  }
+}
+
+// Legacy workbench-container class (if used elsewhere)
+.workbench-container {
+  height: calc(100vh - var(--header-height, 0px));
+  max-height: calc(100vh - var(--header-height, 0px));
+  overflow: hidden;
+
+  @media (max-width: 768px) {
     height: 50vh !important;
   }
 }

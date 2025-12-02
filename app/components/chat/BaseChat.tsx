@@ -738,6 +738,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           {chatStarted && showWorkbench && (
             <div
               className={classNames(
+                "workbench-wrapper",
                 "relative flex-shrink-0",
                 isMobile ? "w-full" : "flex-1"
               )}
