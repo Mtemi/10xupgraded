@@ -10,24 +10,33 @@
 @import './components/workbench.scss';
 @import './components/mobile.scss';
 
-html {
-  height: auto;
-  min-height: 100%;
-  overflow-x: hidden;
+/* Default: Fixed height for workbench */
+html,
+body {
+  height: 100%;
   width: 100%;
-  max-width: 100vw;
+  background-color: #000;
+  overflow: hidden; /* Prevent body scroll when workbench is active */
 }
 
 body {
-  height: auto;
-  min-height: 100%;
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-  position: relative;
-  background-color: #000; /* Ensure dark background */
   font-family: Inter, "SF Pro Text", -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", system-ui, ui-sans-serif, sans-serif;
   line-height: 1.6;
+  position: relative;
+}
+
+/* Homepage view: Allow scrolling when workbench is NOT active */
+body:not(.workbench-active) {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+html:has(body:not(.workbench-active)) {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
 }
 
 /* Headings - Bitget-like hierarchy */
