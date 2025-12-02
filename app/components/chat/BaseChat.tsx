@@ -744,11 +744,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           {/* Workbench - Side by side with chat on desktop, stacked on mobile */}
           {chatStarted && showWorkbench && (
             <div
-              className={classNames(
-                "workbench-wrapper",
-                "relative flex-shrink-0",
-                isMobile ? "w-full" : "flex-1"
-              )}
+              className="flex-1 relative flex-shrink-0"
+              style={{
+                height: '100vh',
+                maxHeight: '100vh',
+                overflow: 'hidden'
+              }}
             >
               <ClientOnly>{() => <Workbench chatStarted={chatStarted} isStreaming={isStreaming} />}</ClientOnly>
             </div>
